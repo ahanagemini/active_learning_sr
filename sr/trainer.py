@@ -15,8 +15,6 @@ Arguments:
   act activations can be relu, elu, or leakyrelu, prelu, FOR EDSR ONLY
   --lognorm     if we are using log normalization
   --debug_input_pics  If we want to save input pics for debugging
-  --aspp        use ASPP in EDSR
-  --dilation    use dilation at the beginning in edsr
 Options:
   -h --help -h
 """
@@ -40,7 +38,6 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from edsr import EDSR
 from dataset import SrDataset
-from losses import SSIM, PerceptualLoss
 
 BATCH_SIZE = {"edsr_16_64": 8, "edsr_8_256": 16,
               "edsr_16_256": 8, "edsr_32_256": 8,}
@@ -83,7 +80,7 @@ def model_save(train_model, train_model_path):
 
 
 def training(training_generator, validation_generator, device, log_dir,
-             architecture, losses, num_epochs, debug_pics, aspp, dilation, act):
+             architecture, losses, num_epochs, debug_pics, act):
     """
 
     Parameters
@@ -107,14 +104,15 @@ def training(training_generator, validation_generator, device, log_dir,
         os.makedirs(save_model_path)
     save_model_path = str(save_model_path)
     # use architecture to create model
-    elif architecture == "edsr_16_64":
-        model = EDSR(n_resblocks=16, n_feats=64, scale=1, aspp=aspp, dilation=dilation, act=act)
+    lr = LR[architecture]
+    if architecture == "edsr_16_64":
+        model = EDSR(n_resblocks=16, n_feats=64, scale=1, act=act)
     elif architecture == "edsr_8_256":
-        model = EDSR(n_resblocks=8, n_feats=256, scale=1, aspp=aspp, dilation=dilation, act=act)
+        model = EDSR(n_resblocks=8, n_feats=256, scale=1, act=act)
     elif architecture == "edsr_16_256":
-        model = EDSR(n_resblocks=16, n_feats=256, scale=1, aspp=aspp, dilation=dilation, act=act)
+        model = EDSR(n_resblocks=16, n_feats=256, scale=1, act=act)
     elif architecture == "edsr_32_256":
-        model = EDSR(n_resblocks=32, n_feats=256, scale=1, aspp=aspp, dilation=dilation, act=act)
+        model = EDSR(n_resblocks=32, n_feats=256, scale=1, act=act)
     model.to(device)
     summary(model, (1, 256, 256), batch_size=1, device="cuda")
     max_epochs = num_epochs
@@ -244,7 +242,7 @@ def training(training_generator, validation_generator, device, log_dir,
             # calling scheduler based on valid loss
             scheduler.step(valid_loss)
 
-        del x_valid, y_valid, loss_valid_list
+        del x_valid, y_valid
         memory = torch.cuda.max_memory_allocated() / 1024.0 / 1024.0
         print(
                 "\nEpoch: {} \tTraining Loss: {:.6f} \tValidation Loss: {:.6f} in {:.1f} seconds. [lr:{:.8f}][max mem:{:.0f}MB]".format(
@@ -291,7 +289,6 @@ def process(arguments):
     loss_list = arguments["--loss_list"]
     losses = loss_list.split(':')
     num_epochs = int(arguments["--num_epochs"]) 
-    lognorm = arguments["--lognorm"]
     debug_pics = arguments["--debug_input_pics"]
     act = arguments["--act"]
 
@@ -312,14 +309,14 @@ def process(arguments):
     torch.backends.cudnn.benchmark = True
 
     # Create training dataset for loading
-    training_set = create_dataset(train_path, architecture, lognorm=lognorm)
+    training_set = create_dataset(train_path, architecture)
     training_generator = torch.utils.data.DataLoader(training_set, **parameters_train)
 
     # Create validation dataset for loading
-    validation_set = create_dataset(valid_path, architecture, lognorm=lognorm)
+    validation_set = create_dataset(valid_path, architecture)
     validation_generator = torch.utils.data.DataLoader(validation_set, **parameters_val)
     training(training_generator, validation_generator, device, log_dir,
-             architecture, losses, num_epochs, debug_pics, aspp, dilation, act)
+             architecture, losses, num_epochs, debug_pics, act)
 
 
 if __name__ == "__main__":
