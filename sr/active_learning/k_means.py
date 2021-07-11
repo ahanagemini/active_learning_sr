@@ -19,7 +19,7 @@ import numpy as np
 from sklearn.cluster import KMeans
 from scipy.spatial import KDTree
 
-def find_diverse_files(diversity_file, sample_size):
+def find_diverse_files(diversity_file, sample_size, pool_size=None, save_files=True):
     '''
     Function to read the diversity file and return k-means NN file names
     Args: diversity_file: diversity file name
@@ -31,8 +31,10 @@ def find_diverse_files(diversity_file, sample_size):
     diversity = pd.read_csv(diversity_file, header=None,
                             names=['filename'] + [str(i) for i in range(0, 128)])
     # Sort by filename
+    if pool_size is not None:
+        diversity = diversity.sample(n=pool_size)
     sorted_diversity = diversity.sort_values(by='filename')
-    filenames = diversity.loc[:, 'filename']
+    filenames = list(sorted_diversity.loc[:, 'filename'])
     diversity_values = sorted_diversity.drop('filename', axis='columns')
 
     # Use k-means to identify the k-centers
@@ -49,13 +51,14 @@ def find_diverse_files(diversity_file, sample_size):
     file_set = list(set(file_list))
     print(len(file_set))
 
+    if save_files:
     # write selected filenames to a file
-    MyFile = open(f'{sample_size}_diverse.txt','w')
-    result = [file_set[i]+'\n' for i in range(len(file_set))]
-    MyFile.writelines(result)
-    MyFile.close()
+        MyFile = open(f'{sample_size}_diverse.txt','w')
+        result = [file_set[i]+'\n' for i in range(len(file_set))]
+        MyFile.writelines(result)
+        MyFile.close()
 
-    return file_set
+    return list(set(indexes)), ndims
 
 
 if __name__ == "__main__":
@@ -63,4 +66,4 @@ if __name__ == "__main__":
     diversity_file = Path(args["--diversity_file"]).resolve()
     sample_size = int(args["--sample_size"])
     start = time.time()
-    files = find_diverse_files(diversity_file, sample_size)
+    indexes, diversity = find_diverse_files(diversity_file, sample_size)
