@@ -30,7 +30,7 @@ import torch.optim as optim
 import torch.nn
 
 from torchsummary import summary
-
+from torch.utils.tensorboard import SummaryWriter
 from docopt import docopt
 
 import numpy as np
@@ -41,7 +41,7 @@ from dataset import SrDataset
 
 BATCH_SIZE = {"edsr_16_64": 8, "edsr_8_256": 16,
               "edsr_16_256": 8, "edsr_32_256": 8,}
-LR = {"edsr_16_64": 0.0005, "edsr_8_256": 0.0002,
+LR = {"edsr_16_64": 0.0001, "edsr_8_256": 0.0001,
         "edsr_16_256": 0.0001, "edsr_32_256": 0.0001}
 
 
@@ -100,6 +100,7 @@ def training(training_generator, validation_generator, device, log_dir,
     """
     timestamp = f'{datetime.datetime.now().date()}-{datetime.datetime.now().time()}' 
     save_model_path = (Path(__file__).parent/ "saved_models").resolve()
+    writer = SummaryWriter(log_dir)
     if not save_model_path.is_dir():
         os.makedirs(save_model_path)
     save_model_path = str(save_model_path)
@@ -139,8 +140,8 @@ def training(training_generator, validation_generator, device, log_dir,
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
     # learning rate scheduler
-    if architecture == "edsr_16_64":
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=3)
+    # if architecture == "edsr_16_64":
+    #    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=3)
     best_valid_loss = float("inf")
     best_epoch = 0
     step = 0
@@ -212,8 +213,8 @@ def training(training_generator, validation_generator, device, log_dir,
         torch.cuda.empty_cache()
 
         # Main validation loop for this epoch
-        if architecture == "edsr_16_64":
-            scheduler.factor = 1 + (epoch / max_epochs) ** 0.9
+        # if architecture == "edsr_16_64":
+        #    scheduler.factor = 1 + (epoch / max_epochs) ** 0.9
         with torch.no_grad():
             for batch_idx, data in tqdm(enumerate(validation_generator), total=valiter):
                 model.train(False)
@@ -237,10 +238,11 @@ def training(training_generator, validation_generator, device, log_dir,
                 valid_loss = valid_loss + (
                     (1 / (batch_idx + 1)) * (loss_valid.data - valid_loss)
                 )
-        
-        if architecture == "edsr_16_64":
+        writer.add_scalar("Loss/train", loss_train, epoch)
+        writer.add_scalar("Loss/validation", loss_valid, epoch)
+        # if architecture == "edsr_16_64":
             # calling scheduler based on valid loss
-            scheduler.step(valid_loss)
+        #     scheduler.step(valid_loss)
 
         del x_valid, y_valid
         memory = torch.cuda.max_memory_allocated() / 1024.0 / 1024.0
@@ -267,7 +269,9 @@ def training(training_generator, validation_generator, device, log_dir,
 
         model_save(model, f"{save_model_path}/{architecture}/{timestamp}_model.pt")
         torch.cuda.empty_cache()
-
+    
+    writer.flush()
+    writer.close()
 
 def process(arguments):
     """
