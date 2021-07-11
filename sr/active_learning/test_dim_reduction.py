@@ -17,7 +17,7 @@ class TestDimReduction(unittest.TestCase):
         Function to perform unit test
         """
         # perform dimension reduction
-        img4list, pre_pca_list = preprocess_images(Path("data/t1ce").resolve())
+        img4list, pre_pca_list = preprocess_images(Path("/home/ahana/active_div2k_cut_npy/train/DIV2K_train_HR/").resolve())
         files = [str(img4list[i]) for i in range(len(img4list)) if i % 4 == 0]
         pca_list = perform_pca(pre_pca_list)
         # only use first 200 images to save time. each image is 4 points
@@ -38,12 +38,12 @@ class TestDimReduction(unittest.TestCase):
         dummy_list = []
         for i in ind:
             cur_list = copy.deepcopy(dummy_list)
-            indices = np.argpartition(d_u_matrix[i], -10)[-10:]
-            indices_l = np.argpartition(d_u_matrix[i], 11)[:11]
+            indices_dissim = np.argpartition(d_u_matrix[i], -10)[-10:]
+            indices_sim = np.argpartition(d_u_matrix[i], 11)[:11]
             cur_list.append(files[i])
-            for x in indices:
+            for x in indices_dissim:
                 cur_list.append(files[x])
-            for y in indices_l:
+            for y in indices_sim:
                 if y != i:
                     cur_list.append(files[y])
             sim_dissim_list.append(cur_list)
@@ -51,19 +51,20 @@ class TestDimReduction(unittest.TestCase):
         # compute L1 error for cur image and rest and check for anomaly
         for files_list in sim_dissim_list:
             image = np.load(files_list[0])
-            image = image.f.arr_0
+            print(files_list[0])
+            # image = image.f.arr_0
             maxim = 0
             minim = float('inf')
             for i in range(1, 11):
                 image1 = np.load(files_list[i])
-                image1 = image1.f.arr_0
+                # image1 = image1.f.arr_0
                 loss = np.mean(np.abs(image - image1))
                 if loss < minim:
                     minim = loss
 
             for i in range(11, 21):
                 image1 = np.load(files_list[i])
-                image1 = image1.f.arr_0
+                # image1 = image1.f.arr_0
                 loss = np.mean(np.abs(image - image1))
                 if loss > maxim:
                     maxim = loss
@@ -71,7 +72,7 @@ class TestDimReduction(unittest.TestCase):
                 print(minim, maxim, files_list[0])
                 count = count + 1
 
-            self.assertEqual(count, 0, "Should be 0")
+        self.assertEqual(count, 0, "Should be 0")
 
 if __name__ == "__main__":
     unittest.main()

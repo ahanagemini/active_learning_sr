@@ -29,7 +29,7 @@ def compute_utility(img_dir):
     Returns: list of utility for each image
     '''
     utility_list = []
-    imglist = list(img_dir.rglob("*.npz"))
+    imglist = list(img_dir.rglob("*.npy"))
     imglist = sorted(imglist)
     read_time = 0.0
     compute_time = 0.0
@@ -37,7 +37,7 @@ def compute_utility(img_dir):
         # read image
         start = time.time()
         image = np.load(img_name)
-        image = image.f.arr_0
+        # image = image.f.arr_0
         read_time = read_time + time.time() - start
         # rescale to 64 * 64
         start = time.time()

@@ -31,7 +31,7 @@ def preprocess_images(img_dir):
     Returns: list of preprocessed images (each initial image represented by 4 dct pieces)
     '''
     pre_pca_list = []
-    imglist = list(img_dir.rglob("*.npz"))
+    imglist = list(img_dir.rglob("*.npy"))
     imglist = sorted(imglist)
     read_time = 0.0
     dct_time = 0.0
@@ -41,7 +41,7 @@ def preprocess_images(img_dir):
         # read image
         start = time.time()
         image = np.load(img_name)
-        image = image.f.arr_0
+        # image = image.f.arr_0
         read_time = read_time + time.time() - start
         # rescale to 64 * 64
         start = time.time()

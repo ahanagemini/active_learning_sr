@@ -31,7 +31,7 @@ class SrDataset(Dataset):
                 on a sample.
         """
         self.root_dir = Path(root_dir).expanduser().resolve().absolute()
-        self.datalist = list(self.root_dir.rglob("*.npz"))
+        self.datalist = list(self.root_dir.rglob("*.npy"))
         self.lognorm = lognorm
         self.test = test
         self.hr = hr

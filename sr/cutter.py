@@ -243,7 +243,7 @@ def process(L, stats_paths, train_size, val_size,
             mlist = matrix_cutter(matrix, height=height, width=width)
         for i, j, mat in mlist:
             fname = str(prefix) + "_" + str(i) + "_" + str(j)
-            np.savez_compressed(odir / fname, mat)
+            np.save(odir / fname, mat)
     # saving stats file in train directory
     for i in range(len(stats_paths)):
         with open(stats_paths[i] / "stats.json", "w") as outfile:

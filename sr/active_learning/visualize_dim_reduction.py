@@ -15,12 +15,13 @@ def create_sim_dissim_list():
     Returns: List of 100 images and their 4 most similar and dissimilar images
     """
     # perform dimension reduction
-    img4list, pre_pca_list = preprocess_images(Path("data/t1ce").resolve())
+    img4list, pre_pca_list = preprocess_images(Path("/home/ahana/active_div2k_cut_npy/train/DIV2K_train_HR/").resolve())
     files = [str(img4list[i]) for i in range(len(img4list)) if i % 4 == 0]
     pca_list = perform_pca(pre_pca_list)
     # only use first 200 images to save time. each image is 4 points
     diversity_values = pca_list[:800]
     ind = random.sample(range(0, len(diversity_values) // 4 - 1), 100)
+    ind.append(files.index('/home/ahana/active_div2k_cut_npy/train/DIV2K_train_HR/0009_4_6.npy'))
     d_u_matrix = np.zeros((len(diversity_values) // 4, len(diversity_values) // 4))
     # compute diversity matrix
     for i in range(len(diversity_values) // 4):
@@ -57,30 +58,30 @@ def save_images(sim_dissim_list):
         
         # Read in the 4 most similar images
         image = np.load(files_list[1])
-        image = image.f.arr_0
+        # image = image.f.arr_0
         image1 = np.load(files_list[2])
-        image1 = image1.f.arr_0
+        # image1 = image1.f.arr_0
         image2 = np.load(files_list[3])
-        image2 = image2.f.arr_0
+        # image2 = image2.f.arr_0
         image3 = np.load(files_list[4])
-        image3 = image3.f.arr_0
+        # image3 = image3.f.arr_0
         img_x = np.vstack((image, image1))
         img_y = np.vstack((image2, image3))
 
         # Read in the 4 most dissimilar images
         image = np.load(files_list[5])
-        image = image.f.arr_0
+        # image = image.f.arr_0
         image1 = np.load(files_list[6])
-        image1 = image1.f.arr_0
+        # image1 = image1.f.arr_0
         image2 = np.load(files_list[7])
-        image2 = image2.f.arr_0
+        # image2 = image2.f.arr_0
         image3 = np.load(files_list[8])
-        image3 = image3.f.arr_0
+        # image3 = image3.f.arr_0
         img_p = np.vstack((image, image1))
         img_q = np.vstack((image2, image3))
         # Read the original image to which we are comparing
         image = np.load(files_list[0])
-        image = image.f.arr_0
+        # image = image.f.arr_0
         img = np.vstack((image, image))
         img_save = np.hstack((img_x, img_y, img, img_p, img_q))
         # Save the images as a combined image. Left 4 are most similar to current,
