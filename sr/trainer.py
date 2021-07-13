@@ -238,8 +238,8 @@ def training(training_generator, validation_generator, device, log_dir,
                 valid_loss = valid_loss + (
                     (1 / (batch_idx + 1)) * (loss_valid.data - valid_loss)
                 )
-        writer.add_scalar("Loss/train", loss_train, epoch)
-        writer.add_scalar("Loss/validation", loss_valid, epoch)
+        writer.add_scalar("Loss/train", train_loss, epoch)
+        writer.add_scalar("Loss/validation", valid_loss, epoch)
         # if architecture == "edsr_16_64":
             # calling scheduler based on valid loss
         #     scheduler.step(valid_loss)
