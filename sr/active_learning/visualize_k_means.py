@@ -1,18 +1,34 @@
+"""Usage:    visualize_k_means.py --diversity_file=diversity_file --save_file=save_file
+             visualize_k_means.py --help | -help | -h
+
+Visualize k_means on a smaller subset using networkx 
+with Haussdroff distance as the diatance metric
+Arguments:
+  diversity_file      a file that contains diversity values for the samples
+  save_file           path for saving image
+
+Options:
+  -h --help -h
+"""
+
 import random
 import numpy as np
 import copy
 from pathlib import Path
 import os
+from docopt import docopt
 from PIL import Image
 import networkx as nx
 import matplotlib.pyplot as plt
 from scipy.spatial.distance import directed_hausdorff
 from k_means import find_diverse_files
 
-def create_graph():
+def create_graph(diversity_file, save_file):
     """
-    Function to compute 4 most similar and dissimilar images to image
-    Returns: List of 100 images and their 4 most similar and dissimilar images
+    Function to visualize and save k_means results as a graph using networkx
+    Args:
+        diversity_file: File that has the dim reduced vectors
+        save_file: file name for saving the generated image
     """
     sample_size = 4
     pool_size = 12
@@ -36,31 +52,39 @@ def create_graph():
             adjacency_matrix[i][j] = temp
             adjacency_matrix[j][i] = temp
 
-    print(adjacency_matrix)
     adjacency_matrix = np.rint(adjacency_matrix)
     adjacency_matrix = adjacency_matrix.astype(int)
-    print(adjacency_matrix)
     G = nx.from_numpy_matrix(adjacency_matrix, create_using=nx.MultiGraph)
     pos=nx.circular_layout(G) 
     nx.draw_networkx_nodes(G, pos, node_color=color, node_size=400)
 
-    print(G.nodes)
     for (node1, node2, data_attr) in G.edges(data=True):
-        width = data_attr['weight']
+        width = data_attr['weight'] // 1000
         edge = (node1, node2)
-        nx.draw_networkx_edges(G, pos, edgelist=[edge], width=width)
+        if width < 1:
+            color = 'blue'
+        elif width < 2:
+            color = 'cyan'
+        elif width < 3:
+            color = 'magenta'
+        elif width < 4:
+            color = 'pink'
+        else:
+            color = 'black'
+        width = width + 1
+        nx.draw_networkx_edges(G, pos, edgelist=[edge], width=width, edge_color=color)
 
+    plt.axis('off')
+    plt.title('Visualizing k-means')
+    plt.savefig(save_file)
 
-def save_images(sim_dissim_list):
-    """
-    Function to create and save images for visualizing dim_reductio.py quality
-    Args: sim_dissim_list
-    """
-    filename = 'cmp_red_dim/' + (str(files_list[0]).split('/')[-1]).split('.')[0] + '.png'
-    plt.imsave(filename, img_save, cmap="gray")
 
 if __name__ == "__main__":
-    create_graph()
+
+    args = docopt(__doc__)
+    diversity_file = Path(args["--diversity_file"]).resolve()
+    save_file = Path(args["--save_file"]).resolve()
+    create_graph(diversity_file, save_file)
 
 
 
