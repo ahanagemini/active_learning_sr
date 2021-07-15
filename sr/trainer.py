@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """Usage:   trainer.py --train=train_path --valid=valid_path --log_dir=log_dir --num_epochs=epochs
-                       --architecture=arch --loss_list=loss1:loss2:loss3:loss4  --act=act [--debug_input_pics]
+                       --architecture=arch --loss_list=loss1:loss2:loss3:loss4  --act=act --resume=model_to_resume [--debug_input_pics]
             trainer.py --help | -help | -h
 
 Train the requested model.
@@ -13,7 +13,7 @@ Arguments:
   architecture  the architecture to train unet or axial
   loss_list     combination of losses to use. : separated list
   act activations can be relu, elu, or leakyrelu, prelu, FOR EDSR ONLY
-  --lognorm     if we are using log normalization
+  resume        path for model to resume training. Specify 'None' if new training
   --debug_input_pics  If we want to save input pics for debugging
 Options:
   -h --help -h
@@ -80,7 +80,7 @@ def model_save(train_model, train_model_path):
 
 
 def training(training_generator, validation_generator, device, log_dir,
-             architecture, losses, num_epochs, debug_pics, act):
+             architecture, losses, num_epochs, debug_pics, act, resume):
     """
 
     Parameters
@@ -94,6 +94,7 @@ def training(training_generator, validation_generator, device, log_dir,
     num_epochs:   The number of epochs
     debug_pics: True if we want to save pictures in input_pics
     act: activation function to be used
+    resume: path to model for training resumption. None for new model
     Returns
     -------
 
@@ -114,10 +115,15 @@ def training(training_generator, validation_generator, device, log_dir,
         model = EDSR(n_resblocks=16, n_feats=256, scale=1, act=act)
     elif architecture == "edsr_32_256":
         model = EDSR(n_resblocks=32, n_feats=256, scale=1, act=act)
+    
     model.to(device)
-    summary(model, (1, 256, 256), batch_size=1, device="cuda")
+    if resume is not None:
+        model.load_state_dict(torch.load(resume))
+        print("Model loaded. Resuming training")
+    else:
+        summary(model, (1, 256, 256), batch_size=1, device="cuda")
     max_epochs = num_epochs
-
+    
     # set up dictionary of losses and loss weights
     criterion = dict()
     percep_criterion =False
@@ -295,7 +301,9 @@ def process(arguments):
     num_epochs = int(arguments["--num_epochs"]) 
     debug_pics = arguments["--debug_input_pics"]
     act = arguments["--act"]
-
+    resume = arguments["--resume"]
+    if resume == 'None':
+        resume = None
     parameters_train = {
         "batch_size": BATCH_SIZE[architecture],
         "shuffle": True,
@@ -320,7 +328,7 @@ def process(arguments):
     validation_set = create_dataset(valid_path, architecture)
     validation_generator = torch.utils.data.DataLoader(validation_set, **parameters_val)
     training(training_generator, validation_generator, device, log_dir,
-             architecture, losses, num_epochs, debug_pics, act)
+             architecture, losses, num_epochs, debug_pics, act, resume)
 
 
 if __name__ == "__main__":
